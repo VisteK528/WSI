@@ -103,12 +103,12 @@ class MinMaxSolver:
             board_copy = board_copy.make_move(ConnectFourMove(move))
             prize = self.evaluate_position(board_copy, player)
 
-            print(f"Column: {move}\tPrize: {prize}")
+            #print(f"Column: {move}\tPrize: {prize}")
             if prize > best_prize:
                 best_prize = prize
                 best_move = move
 
-        print(f"Chosen: {best_move}")
+        #print(f"Chosen: {best_move}")
         return best_move
 
     def is_terminal(self) -> bool:
@@ -159,19 +159,21 @@ class MinMaxSolver:
         is_terminal = self.is_terminal()
         beta = (choice(valid_moves), beta)
         alpha = (choice(valid_moves), alpha)
+        print(f"Initialization values: {alpha}\t{beta}\t{depth}")
 
         if is_terminal or depth == 0:
             if is_terminal:
                 if self.game.get_winner() == self.game.first_player:
-                    return (None, 100000)
+                    return (self.get_best_move(self.game.first_player), 100000)
                 elif self.game.get_winner() == self.game.second_player:
-                    return (None, -10000)
+                    return (self.get_best_move(self.game.second_player), -10000)
                 else:
                     return (None, 0)
             else:
-                return (None, self.evaluate_position(board, self.game.second_player))
+                return (self.get_best_move(self.game.second_player), self.evaluate_position(board, self.game.second_player))
 
         if is_maximizing_player:
+            print("Max")
             for valid_move in valid_moves:
                 board_copy = copy(board)
                 board_copy = board_copy.make_move(ConnectFourMove(valid_move))
@@ -179,15 +181,17 @@ class MinMaxSolver:
                 new_alpha = self.minimax(board_copy, depth - 1, alpha[1], beta[1],
                                                not is_maximizing_player)
 
+                print(f"Available alpha: {alpha}\t {new_alpha}\tDepth: {depth}")
                 alpha = max(alpha, new_alpha, key=lambda x: x[1])
-                print(f"Alpha: {alpha}\t {new_alpha}")
+                print(f"Chosen alpha: {alpha}")
 
                 if alpha[1] >= beta[1]:
-                    return beta
+                    break
 
             return alpha
 
         else:
+            print("Min")
             for valid_move in valid_moves:
                 board_copy = copy(board)
                 board_copy = board_copy.make_move(ConnectFourMove(valid_move))
@@ -195,12 +199,13 @@ class MinMaxSolver:
                 new_beta = self.minimax(board_copy, depth - 1, alpha[1], beta[1],
                                          not is_maximizing_player)
 
+                print(f"Available beta: {beta}\t {new_beta}\tDepth: {depth}")
                 beta = min(beta, new_beta, key=lambda x: x[1])
+                print(f"Chosen beta: {beta}")
 
                 if alpha[1] >= beta[1]:
-                    return beta
-
-            return alpha
+                    break
+            return beta
 
 
 if __name__ == "__main__":
@@ -219,9 +224,9 @@ if __name__ == "__main__":
         print(game)
 
         print(f"Playing AI: {p2.char}")
-        p2_best = algorithm.minimax(algorithm.game.state, 2, -np.inf, np.inf, True)
-        print(p2_best)
-        game.make_move(ConnectFourMove(p2_best))
+        best_column, score = algorithm.minimax(algorithm.game.state, 2, -np.inf, np.inf, True)
+        print(best_column, score)
+        game.make_move(ConnectFourMove(best_column))
 
         print(game)
 
