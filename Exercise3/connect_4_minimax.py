@@ -6,8 +6,6 @@ from random import choice
 ROW_COUNT = 6
 COLUMN_COUNT = 7
 
-
-
 if __name__ == "__main__":
     p1 = Player("x")
     p2 = Player("o")
@@ -19,18 +17,16 @@ if __name__ == "__main__":
     i = 0
     p1_won = 0
     p2_won = 0
-    games = 20
+    games = 1
     for game_nb in range(games):
         game = ConnectFour(size=(COLUMN_COUNT, ROW_COUNT), first_player=p1,
                            second_player=p2)
 
-        algorithm = MinMaxSolver(game, ROW_COUNT, COLUMN_COUNT, max_player=p1,
-                                 min_player=p2)
+        algorithm = MinMaxSolver(game, ROW_COUNT, COLUMN_COUNT)
 
-        algorithm2 = MinMaxSolver(game, ROW_COUNT, COLUMN_COUNT, max_player=p2,
-                                  min_player=p1)
+        algorithm2 = MinMaxSolver(game, ROW_COUNT, COLUMN_COUNT)
 
-        heuristic_sovler = HeuristicSolver(game, ROW_COUNT, COLUMN_COUNT, max_player=p1, min_player=p2)
+        heuristic_sovler = HeuristicSolver(game, ROW_COUNT, COLUMN_COUNT)
 
         while not algorithm.game.state.is_finished():
             time.sleep(0.1)
@@ -42,8 +38,8 @@ if __name__ == "__main__":
 
             i += 1
             # MiniMax alpha-beta
-            #best_move = algorithm.get_best_move_2(DEPTH)
-            best_move = heuristic_sovler.get_heuristic_move()
+            best_move = algorithm.get_best_move(DEPTH)
+            #best_move = heuristic_sovler.get_heuristic_move()
 
             # Random move
             #best_move = choice(algorithm.get_valid_moves())
@@ -63,7 +59,7 @@ if __name__ == "__main__":
                 break
 
             i += 1
-            best_move2 = algorithm2.get_best_move_2(DEPTH)
+            best_move2 = algorithm2.get_best_move(DEPTH)
             # print(best_move2)
             game.make_move(ConnectFourMove(best_move2))
             print(game)
