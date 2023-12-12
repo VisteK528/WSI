@@ -1,11 +1,14 @@
-import gymnasium as gym
-env = gym.make("CartPole-v1")
+import gymnasium
+import random
+import numpy as np
+import matplotlib.pyplot as plt
+import time
 
-observation, info = env.reset(seed=42)
-for _ in range(1000):
-    action = env.action_space.sample()
-    observation, reward, terminated, truncated, info = env.step(action)
+available_moves = [x for x in range(6)]
+environment = gymnasium.make("Taxi-v3", render_mode="human")
+environment.reset()
 
-    if terminated or truncated:
-        observation, info = env.reset()
-env.close()
+for i in range(100):
+    environment.step(random.choice(available_moves))
+    environment.render()
+    time.sleep(0.1)
