@@ -1,4 +1,4 @@
-from layers import FullyConnected, Tanh
+from layers import FullyConnected, Tanh, Softmax
 from network import Loss, Network
 import numpy as np
 """from keras.datasets import mnist
@@ -16,19 +16,24 @@ def normalize(x: np.ndarray) -> np.ndarray:
     return x_norm
 
 
-def cross_entropy_loss(y_true: float, y_pred: float):
-    return -y_true * np.log(y_pred)
+def cross_entropy_loss(expected_dist: np.ndarray, predicted_dist: np.ndarray) -> np.ndarray:
+    epsilon = np.finfo(np.float64).eps
+    log_predicted_dist = np.array([-np.log(x+epsilon) for x in predicted_dist])
+    return np.multiply(expected_dist, log_predicted_dist)
 
 
-def cross_entropy_loss_derivative(y_true: float, y_pred: float):
-    return - y_true/y_pred
+def cross_entropy_loss_derivative(expected_dist: np.ndarray, predicted_dist: np.ndarray) -> np.ndarray:
+    return predicted_dist - expected_dist
 
 
 if __name__ == "__main__":
     """set_random_seed(123)
     (x_train, y_train), (x_test, y_test) = mnist.load_data()
 
-    layers = [FullyConnected(input_size=784, output_size=16), Tanh(), FullyConnected(input_size=16, output_size=16), Tanh(), FullyConnected(input_size=16, output_size=10), Tanh()]
+    layers = [FullyConnected(input_size=784, output_size=16), Tanh(),
+              FullyConnected(input_size=16, output_size=16), Tanh(),
+              FullyConnected(input_size=16, output_size=10), Softmax()]
+
     loss = Loss(cross_entropy_loss, cross_entropy_loss_derivative)
 
     x_train = x_train.reshape((60000, 28 * 28))
@@ -38,10 +43,8 @@ if __name__ == "__main__":
 
     net = Network(layers, learning_rate=0.1)
     net.compile(loss)
-    print(net.get_parameters().shape)"""
 
-
-    """print("Loss", net.combined_loss(x_train, y_train))
+    net.fit(x_train, y_train, 5, batch_size=16, learning_rate=0.1)
 
     results = []
     for attributes in x_test:
@@ -60,18 +63,24 @@ if __name__ == "__main__":
     # Small test model
     layers = [FullyConnected(input_size=4, output_size=4), Tanh(),
               FullyConnected(input_size=4, output_size=4), Tanh(),
-              FullyConnected(input_size=4, output_size=3), Tanh()]
+              FullyConnected(input_size=4, output_size=3), Softmax()]
     loss = Loss(cross_entropy_loss, cross_entropy_loss_derivative)
+
+
 
     net = Network(layers, learning_rate=0.1)
     net.compile(loss)
 
-    net.fit(x_train, y_train, 5, 0.1)
-    #print(net.get_parameters().shape)
+    net.fit(x_train, y_train, 10, batch_size=10, learning_rate=0.9)
 
-    results = []
-    for attributes in x_test:
-        results.append(np.argmax(net(attributes)))
-    accuracy = sum([1 for prediction, label in zip(results, y_test) if
-                    prediction == label]) / len(y_test)
+    predicted_sum = 0
+    for attributes, label in zip(x_test, y_test):
+        prediction_dist = net(attributes)
+        print("Prediction_dist:", prediction_dist)
+        predicted_label = np.argmax(prediction_dist)
+
+        if predicted_label == label:
+            predicted_sum += 1
+
+    accuracy = predicted_sum / len(y_test)
     print("Accuracy: %.2f%%" % (accuracy * 100))

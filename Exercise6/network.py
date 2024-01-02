@@ -1,6 +1,7 @@
 from typing import List
 import numpy as np
 from layers import Layer
+from sklearn.utils import shuffle
 
 def min_max_norm(val, min_val, max_val, new_min, new_max):
   return (val - min_val) * (new_max - new_min) / (max_val - min_val) + new_min
@@ -32,7 +33,7 @@ class Network:
             x = layer.forward(x)
 
         # Normalize
-        x = np.array([min_max_norm(pred, -1, 1, 0, 1) for pred in x])
+        #x = np.array([min_max_norm(pred, -1, 1, 1e-10, 1) for pred in x])
 
         return x
 
@@ -42,8 +43,8 @@ class Network:
     def get_parameters(self) -> np.ndarray:
         parameters_lists = []
         for layer in self.layers:
-            if layer.parameters is not None:
-                parameters_lists.append(layer.parameters.flatten())
+            if layer.get_weights_and_biases() is not None:
+                parameters_lists.append(layer.get_weights_and_biases().flatten())
 
         return np.concatenate(parameters_lists)
 
@@ -51,24 +52,25 @@ class Network:
         combined_indexes = 0
         split_indices = []
         for layer in self.layers:
-            if layer.parameters is not None:
-                split_indices.append(combined_indexes+layer.input_size*layer.output_size)
-                combined_indexes += layer.input_size*layer.output_size
+            if layer.get_weights_and_biases() is not None:
+                split_indices.append(combined_indexes+(layer.input_size+1)*layer.output_size)
+                combined_indexes += (layer.input_size+1)*layer.output_size
 
         parameters = np.split(combined_parameters, split_indices)
         reshaped_parameters = []
         layers = [layer for layer in self.layers if
-                  layer.parameters_gradients is not None]
+                  layer.get_weights_and_biases() is not None]
 
         for layer, parameter_matrix in zip(layers, parameters):
-            reshaped_parameters.append(parameter_matrix.reshape((layer.output_size, layer.input_size)))
+            reshaped_parameters.append(parameter_matrix.reshape((layer.output_size, (layer.input_size+1))))
         return reshaped_parameters
 
     def get_gradients(self) -> np.ndarray:
         parameters_lists = []
         for layer in self.layers:
-            if layer.parameters_gradients is not None:
-                parameters_lists.append(layer.parameters_gradients.flatten())
+            if layer.get_gradient() is not None:
+                gradients = layer.get_gradient()
+                parameters_lists.append(gradients.flatten())
 
         return np.concatenate(parameters_lists)
 
@@ -76,10 +78,10 @@ class Network:
         combined_indexes = 0
         split_indices = []
         for layer in self.layers:
-            if layer.parameters_gradients is not None:
-                split_indices.append(
-                    combined_indexes + layer.input_size * layer.output_size)
-                combined_indexes += layer.input_size * layer.output_size
+            if layer.get_gradient() is not None:
+                split_indices.append(combined_indexes + (
+                            layer.input_size + 1) * layer.output_size)
+                combined_indexes += (layer.input_size + 1) * layer.output_size
 
         return np.split(combined_parameters, split_indices)
 
@@ -94,44 +96,68 @@ class Network:
             x_train: np.ndarray,
             y_train: np.ndarray,
             epochs: int,
+            batch_size: int,
             learning_rate: float,
             verbose: int = 0) -> None:
         """Fit the network to the training data"""
 
-        for epoch in range(epochs):
-            for layer in self.layers:
-                if layer.parameters_gradients is not None:
-                    layer.reset_gradients()
+        batches = len(x_train) // batch_size
 
-            gradient = self.get_gradients()
-            step_loss_value = 0
-            for x, y in zip(x_train, y_train):
-                # Reset all gradients
+        for epoch in range(epochs):
+            # Shuffle the data
+            x_train, y_train = shuffle(x_train, y_train)
+
+            for index in range(batches):
+                start_index = index * batch_size
+                end_index = (index + 1) * batch_size
+
+                x_batch = x_train[start_index:end_index]
+                y_batch = y_train[start_index:end_index]
+
                 for layer in self.layers:
-                    if layer.parameters_gradients is not None:
+                    if layer.get_gradient() is not None:
                         layer.reset_gradients()
 
-                # Forward pass
-                x = self(x)
+                gradient = self.get_gradients()
+                step_loss_value = 0
 
-                # Backward pass
-                true_probability_dist = np.array([np.count_nonzero(y_train == single_class)/len(y_train) for single_class in np.unique(y_train)])
+                for x, y in zip(x_batch, y_batch):
+                    # Reset all gradients
+                    for layer in self.layers:
+                        if layer.get_gradient() is not None:
+                            layer.reset_gradients()
 
-                step_loss_value += sum(self.loss_function.loss(true_probability_dist, x))
+                    # Forward pass
+                    x = self(x)
 
-                loss_derivative = self.loss_function.loss_derivative(true_probability_dist, x)
-                for layer in reversed(self.layers):
-                    loss_derivative = layer.backward(loss_derivative)
+                    # Backward pass
+                    """true_probability_dist = np.zeros((len(np.unique(y_train)),))
+                    true_probability_dist[y] = 1"""
+                    y = np.array([y])
+                    loss_array = self.loss_function.loss(y, x)
+                    step_loss_value += sum(loss_array)
 
-                gradient += self.get_gradients()
+                    loss_derivative = self.loss_function.loss_derivative(
+                        y, x)
+                    for layer in reversed(self.layers):
+                        loss_derivative = layer.backward(loss_derivative)
 
-            loss_value = step_loss_value / len(x_train)
-            weights = self.get_parameters()
-            weights -= learning_rate * gradient
-            splited_weights = self.split_parameters(weights)
-            layers = [layer for layer in self.layers if layer.parameters_gradients is not None]
-            for layer, new_weigts in zip(layers, splited_weights):
-                layer.parameters[:, :-1] = new_weigts
+                    gradient += self.get_gradients()
+
+                loss_value = step_loss_value / len(x_batch)
+                print(f"Epoch: {epoch}, Loss: {loss_value}")
+
+                # Optimization
+                weights = self.get_parameters()
+                gradient = gradient / len(x_batch)
+                weights -= learning_rate * gradient
+
+                # Assigning new weights and biases
+                splited_weights = self.split_parameters(weights)
+                layers = [layer for layer in self.layers if
+                          layer.get_gradient() is not None]
+                for layer, new_weigts in zip(layers, splited_weights):
+                    layer.parameters = new_weigts
 
 
 
