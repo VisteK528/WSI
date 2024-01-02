@@ -1,3 +1,8 @@
 import numpy as np
 
-print(np.random.uniform(-1/np.sqrt(1), 1/np.sqrt(1), (1, 1)))
+wektor = np.array([[5], [1], [3], [7], [2]])  # Wektor kolumnowy (5,1)
+skalar = 2
+
+wynik = np.dot(wektor, skalar)
+
+print(wynik)

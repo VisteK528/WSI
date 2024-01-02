@@ -79,20 +79,21 @@ class FullyConnected(Layer):
         return self._parameters_gradients
 
     def forward(self, x: np.ndarray) -> np.ndarray:
-        y = np.dot(self._parameters, x) + self._biases
+        y = np.dot(self._parameters, x)
+        y += + self._biases
 
         self._last_a = x
         return y
 
     def backward(self, output_derivative) -> np.ndarray:
         # Calculate derivative with respect to previous layer activation
-        layer_gradient = np.dot(output_derivative, self._parameters)
+        layer_gradient = np.dot(np.transpose(self._parameters), output_derivative)
 
         # Calculate derivative with respect to current layer weights
-        self._parameters_gradients[:, :-1] = np.outer(output_derivative, self._last_a)
+        self._parameters_gradients[:, :-1] = np.dot(output_derivative[:, np.newaxis], np.transpose(self._last_a[:, np.newaxis]))
 
         # Calculate derivative with respect to current layer biases
-        self._parameters_gradients[:, -1] = np.multiply(np.ones((self.output_size,)), output_derivative)
+        self._parameters_gradients[:, -1] = output_derivative.reshape(output_derivative.shape[0],)
 
         return layer_gradient
 

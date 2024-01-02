@@ -133,12 +133,12 @@ class Network:
                     # Backward pass
                     """true_probability_dist = np.zeros((len(np.unique(y_train)),))
                     true_probability_dist[y] = 1"""
-                    y = np.array([y])
-                    loss_array = self.loss_function.loss(y, x)
+                    true_probability_dist = np.array([y])
+                    loss_array = self.loss_function.loss(true_probability_dist, x)
                     step_loss_value += sum(loss_array)
 
                     loss_derivative = self.loss_function.loss_derivative(
-                        y, x)
+                        true_probability_dist, x)
                     for layer in reversed(self.layers):
                         loss_derivative = layer.backward(loss_derivative)
 

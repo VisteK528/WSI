@@ -71,7 +71,7 @@ if __name__ == "__main__":
     net = Network(layers, learning_rate=0.1)
     net.compile(loss)
 
-    net.fit(x_train, y_train, 10, batch_size=10, learning_rate=0.9)
+    net.fit(x_train, y_train, 10, batch_size=18, learning_rate=0.1)
 
     predicted_sum = 0
     for attributes, label in zip(x_test, y_test):
