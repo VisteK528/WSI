@@ -18,9 +18,8 @@ if __name__ == "__main__":
     x = np.array([np.array([float(element)]) for element in x])
 
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.1, random_state=123)
-    layers = [FullyConnected(input_size=1, output_size=5), ReLU(),
-              FullyConnected(input_size=5, output_size=10), Sigmoid(),
-              FullyConnected(input_size=10, output_size=10), Sigmoid(),
+    layers = [FullyConnected(input_size=1, output_size=10), Tanh(),
+              FullyConnected(input_size=10, output_size=10), Tanh(),
               FullyConnected(input_size=10, output_size=1), Linear()]
 
     loss = Loss(squared_error, squared_error_derivative)
@@ -28,7 +27,7 @@ if __name__ == "__main__":
     net = Network(layers, learning_rate=0.01)
     net.compile(loss)
 
-    net.fit(x_train, y_train, 3, batch_size=100, learning_rate=0.01)
+    net.fit(x_train, y_train, 50, batch_size=10, learning_rate=0.03)
 
     y_pred = np.array([float(net(x_sample).reshape(1,)) for x_sample in np.array([np.array([float(element)]) for element in np.arange(-5, 5, 0.01)])])
     real = np.array([np.sin(point) for point in np.arange(-5, 5, 0.01)])

@@ -20,7 +20,7 @@ class Loss:
 
     def loss_derivative(self, x:np.ndarray, y:np.ndarray)->np.ndarray:
         """Loss function derivative for a particular x and y"""
-        return self.loss_function(x, y)
+        return self.loss_function_derivative(x, y)
 
 
 class Network:
