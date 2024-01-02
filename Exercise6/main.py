@@ -1,8 +1,8 @@
 from layers import FullyConnected, Tanh, Softmax
 from network import Loss, Network
 import numpy as np
-"""from keras.datasets import mnist
-from keras.utils import set_random_seed"""
+from keras.datasets import mnist
+from keras.utils import set_random_seed
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 
@@ -32,14 +32,18 @@ def squared_error_derivative(expected_dist: np.ndarray, predicted_dist: np.ndarr
 
 
 if __name__ == "__main__":
-    """set_random_seed(123)
+    set_random_seed(123)
     (x_train, y_train), (x_test, y_test) = mnist.load_data()
+
+    one_hot = np.zeros((len(y_train), len(np.unique(y_test))))
+    for i, y in enumerate(y_train):
+        one_hot[i, y] = 1
 
     layers = [FullyConnected(input_size=784, output_size=16), Tanh(),
               FullyConnected(input_size=16, output_size=16), Tanh(),
-              FullyConnected(input_size=16, output_size=10), Softmax()]
+              FullyConnected(input_size=16, output_size=10), Tanh()]
 
-    loss = Loss(cross_entropy_loss, cross_entropy_loss_derivative)
+    loss = Loss(squared_error, squared_error_derivative)
 
     x_train = x_train.reshape((60000, 28 * 28))
     x_train = x_train.astype('float32') / 255
@@ -49,15 +53,15 @@ if __name__ == "__main__":
     net = Network(layers, learning_rate=0.1)
     net.compile(loss)
 
-    net.fit(x_train, y_train, 5, batch_size=16, learning_rate=0.1)
+    net.fit(x_train, one_hot, 5, batch_size=64, learning_rate=0.1)
 
     results = []
     for attributes in x_test:
         results.append(np.argmax(net(attributes)))
     accuracy = sum([1 for prediction, label in zip(results, y_test) if prediction == label]) / len(y_test)
-    print("Accuracy: %.2f%%" % (accuracy * 100))"""
+    print("Accuracy: %.2f%%" % (accuracy * 100))
 
-    iris = load_iris()
+    """iris = load_iris()
 
     x = iris.data
     x = x.astype("float32") / np.max(x)
@@ -91,4 +95,4 @@ if __name__ == "__main__":
             predicted_sum += 1
 
     accuracy = predicted_sum / len(y_test)
-    print("Accuracy: %.2f%%" % (accuracy * 100))
+    print("Accuracy: %.2f%%" % (accuracy * 100))"""
