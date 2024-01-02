@@ -57,6 +57,14 @@ if __name__ == "__main__":
     x = iris.data
     x = x.astype("float32") / np.max(x)
     y = iris.target
+
+    # Encode the y as one-hot
+    # TODO Create util for one-hot encoding
+    true_probability_dist = np.zeros((len(y), len(np.unique(y))))
+    for element, dist in zip(y, true_probability_dist):
+        dist[element] = 1
+
+    y = true_probability_dist
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.1, random_state=123)
 
 
@@ -79,7 +87,7 @@ if __name__ == "__main__":
         print("Prediction_dist:", prediction_dist)
         predicted_label = np.argmax(prediction_dist)
 
-        if predicted_label == label:
+        if predicted_label == np.argmax(label):
             predicted_sum += 1
 
     accuracy = predicted_sum / len(y_test)

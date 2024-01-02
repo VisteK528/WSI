@@ -15,6 +15,9 @@ class Loss:
         """Loss function for a particular x"""
         return self.loss_function(x, y)
 
+    def loss_sum(self, x: np.ndarray, y: np.ndarray) -> float:
+        return sum(self.loss(x, y))
+
     def loss_derivative(self, x:np.ndarray, y:np.ndarray)->np.ndarray:
         """Loss function derivative for a particular x and y"""
         return self.loss_function(x, y)
@@ -85,13 +88,6 @@ class Network:
 
         return np.split(combined_parameters, split_indices)
 
-    def combined_loss(self, x: np.ndarray, y: np.ndarray) -> float:
-        results = []
-        for single_x, single_y in zip(x, y):
-            pred = self(single_x)
-            results.append(self.loss_function.loss(single_y, pred))
-        return sum(results) / len(results)
-
     def fit(self,
             x_train: np.ndarray,
             y_train: np.ndarray,
@@ -122,26 +118,28 @@ class Network:
                 step_loss_value = 0
 
                 for x, y in zip(x_batch, y_batch):
-                    # Reset all gradients
+                    # Reset all gradient holders in layers
                     for layer in self.layers:
                         if layer.get_gradient() is not None:
                             layer.reset_gradients()
 
-                    # Forward pass
+                    # ============== Forward pass =============================
                     x = self(x)
 
-                    # Backward pass
-                    """true_probability_dist = np.zeros((len(np.unique(y_train)),))
-                    true_probability_dist[y] = 1"""
-                    true_probability_dist = np.array([y])
-                    loss_array = self.loss_function.loss(true_probability_dist, x)
-                    step_loss_value += sum(loss_array)
+                    # ============== Backward pass ============================
 
-                    loss_derivative = self.loss_function.loss_derivative(
-                        true_probability_dist, x)
+                    # Calculate the loss value for the step
+                    step_loss_value += self.loss_function.loss_sum(y, x)
+
+                    # Calculate the derivative of the loss function
+                    # with respond to last forward pass outputs
+                    loss_derivative = self.loss_function.loss_derivative(y, x)
+
+                    # Backpropagation
                     for layer in reversed(self.layers):
                         loss_derivative = layer.backward(loss_derivative)
 
+                    # Sum gradients through all examples in the mini-batch
                     gradient += self.get_gradients()
 
                 loss_value = step_loss_value / len(x_batch)
@@ -156,9 +154,6 @@ class Network:
                 splited_weights = self.split_parameters(weights)
                 layers = [layer for layer in self.layers if
                           layer.get_gradient() is not None]
+
                 for layer, new_weigts in zip(layers, splited_weights):
-                    layer.parameters = new_weigts
-
-
-
-
+                    layer.set_weights_and_biases(new_weigts)

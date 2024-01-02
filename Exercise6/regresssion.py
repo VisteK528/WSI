@@ -1,4 +1,4 @@
-from layers import FullyConnected, Tanh, Linear
+from layers import FullyConnected, Tanh, Linear, ReLU, Sigmoid
 from network import Loss, Network
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -14,21 +14,21 @@ def squared_error_derivative(expected_dist: np.ndarray, predicted_dist: np.ndarr
 
 if __name__ == "__main__":
     x = np.arange(-10, 10, 0.01)
-    y = np.array([np.sin(point) for point in x])
+    y = np.array([np.array([np.sin(point)]) for point in x])
     x = np.array([np.array([float(element)]) for element in x])
 
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.1, random_state=123)
-
-    layers = [FullyConnected(input_size=1, output_size=10), Tanh(),
-              FullyConnected(input_size=10, output_size=10), Tanh(),
+    layers = [FullyConnected(input_size=1, output_size=5), ReLU(),
+              FullyConnected(input_size=5, output_size=10), Sigmoid(),
+              FullyConnected(input_size=10, output_size=10), Sigmoid(),
               FullyConnected(input_size=10, output_size=1), Linear()]
 
     loss = Loss(squared_error, squared_error_derivative)
 
-    net = Network(layers, learning_rate=0.5)
+    net = Network(layers, learning_rate=0.01)
     net.compile(loss)
 
-    net.fit(x_train, y_train, 5, batch_size=100, learning_rate=0.5)
+    net.fit(x_train, y_train, 3, batch_size=100, learning_rate=0.01)
 
     y_pred = np.array([float(net(x_sample).reshape(1,)) for x_sample in np.array([np.array([float(element)]) for element in np.arange(-5, 5, 0.01)])])
     real = np.array([np.sin(point) for point in np.arange(-5, 5, 0.01)])

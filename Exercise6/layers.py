@@ -128,6 +128,37 @@ class Softmax(Layer):
         return gradients
 
 
+class ReLU(Layer):
+    def __init__(self) -> None:
+        super().__init__()
+        self._last_z = None
+
+    def forward(self, x: np.ndarray) -> np.ndarray:
+        self._last_z = x
+        return np.array([max(0, element) for element in x])
+
+    def backward(self, output_derivative) -> np.ndarray:
+        gradients = np.multiply(output_derivative, np.where(self._last_z < 0, 0, 1))
+        return gradients
+
+
+class Sigmoid(Layer):
+    def __init__(self) -> None:
+        super().__init__()
+        self._last_z = None
+
+    def forward(self, x: np.ndarray) -> np.ndarray:
+        self._last_z = x
+        val_exp = 1 / (1 + np.exp(-x))
+        return np.array(val_exp)
+
+    def backward(self, output_derivative) -> np.ndarray:
+        val_exp = 1 / (1 + np.exp(-self._last_z))
+        local_gradient = np.array(val_exp * (1 - val_exp))
+        gradients = np.multiply(output_derivative, local_gradient)
+        return gradients
+
+
 class Linear(Layer):
     def __init__(self) -> None:
         super().__init__()
