@@ -35,9 +35,6 @@ class Network:
         for layer in self.layers:
             x = layer.forward(x)
 
-        # Normalize
-        #x = np.array([min_max_norm(pred, -1, 1, 1e-10, 1) for pred in x])
-
         return x
 
     def compile(self, loss: Loss) -> None:
@@ -128,12 +125,17 @@ class Network:
 
                     # ============== Backward pass ============================
 
+                    #true_probability_dist = y
+                    true_probability_dist = np.zeros((len(np.unique(y_train)), ))
+                    true_probability_dist[y] = 1
+
                     # Calculate the loss value for the step
-                    step_loss_value += self.loss_function.loss_sum(y, x)
+                    value = self.loss_function.loss_sum(true_probability_dist, x)
+                    step_loss_value += value
 
                     # Calculate the derivative of the loss function
                     # with respond to last forward pass outputs
-                    loss_derivative = self.loss_function.loss_derivative(y, x)
+                    loss_derivative = self.loss_function.loss_derivative(true_probability_dist, x)
 
                     # Backpropagation
                     for layer in reversed(self.layers):

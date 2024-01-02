@@ -17,13 +17,18 @@ def normalize(x: np.ndarray) -> np.ndarray:
 
 
 def cross_entropy_loss(expected_dist: np.ndarray, predicted_dist: np.ndarray) -> np.ndarray:
-    epsilon = np.finfo(np.float64).eps
-    log_predicted_dist = np.array([-np.log(x+epsilon) for x in predicted_dist])
+    log_predicted_dist = np.array([-np.log(x) for x in predicted_dist])
     return np.multiply(expected_dist, log_predicted_dist)
 
 
 def cross_entropy_loss_derivative(expected_dist: np.ndarray, predicted_dist: np.ndarray) -> np.ndarray:
     return predicted_dist - expected_dist
+
+def squared_error(expected_dist: np.ndarray, predicted_dist: np.ndarray) -> np.ndarray:
+    return np.array([pow(expected-predicted, 2) for expected, predicted in zip(expected_dist, predicted_dist)])
+
+def squared_error_derivative(expected_dist: np.ndarray, predicted_dist: np.ndarray) -> np.ndarray:
+    return 2*(predicted_dist - expected_dist)
 
 
 if __name__ == "__main__":
@@ -58,36 +63,31 @@ if __name__ == "__main__":
     x = x.astype("float32") / np.max(x)
     y = iris.target
 
-    # Encode the y as one-hot
-    # TODO Create util for one-hot encoding
-    true_probability_dist = np.zeros((len(y), len(np.unique(y))))
-    for element, dist in zip(y, true_probability_dist):
-        dist[element] = 1
-
-    y = true_probability_dist
-    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.1, random_state=123)
+    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.1)
 
 
     # Small test model
-    layers = [FullyConnected(input_size=4, output_size=4), Tanh(),
-              FullyConnected(input_size=4, output_size=4), Tanh(),
-              FullyConnected(input_size=4, output_size=3), Softmax()]
-    loss = Loss(cross_entropy_loss, cross_entropy_loss_derivative)
+    layers = [FullyConnected(input_size=4, output_size=40), Tanh(),
+              FullyConnected(input_size=40, output_size=40), Tanh(),
+              FullyConnected(input_size=40, output_size=40), Tanh(),
+              FullyConnected(input_size=40, output_size=3), Tanh()]
+    #loss = Loss(cross_entropy_loss, cross_entropy_loss_derivative)
+    loss = Loss(squared_error, squared_error_derivative)
 
 
 
     net = Network(layers, learning_rate=0.1)
     net.compile(loss)
 
-    net.fit(x_train, y_train, 10, batch_size=18, learning_rate=0.1)
+    net.fit(x_train, y_train, 1000, batch_size=18, learning_rate=0.1)
 
     predicted_sum = 0
     for attributes, label in zip(x_test, y_test):
         prediction_dist = net(attributes)
         print("Prediction_dist:", prediction_dist)
         predicted_label = np.argmax(prediction_dist)
-
-        if predicted_label == np.argmax(label):
+        print("Predicted label:", predicted_label, ", Actual label:", label)
+        if predicted_label == label:
             predicted_sum += 1
 
     accuracy = predicted_sum / len(y_test)
