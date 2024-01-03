@@ -20,11 +20,17 @@ class Layer(ABC):
         self._biases = None
         self.activation_layer = True
 
-    def get_weights_and_biases(self) -> np.ndarray:
+    def get_weights(self) -> np.ndarray:
         return self._weights
 
-    def set_weights_and_biases(self, parameters: np.ndarray) -> None:
-        pass
+    def get_biases(self) -> np.ndarray:
+        return self._biases
+
+    def set_weights(self, weights: np.ndarray) -> None:
+        self._weights = weights
+
+    def set_biases(self, biases: np.ndarray) -> None:
+        self._biases = biases
 
     @abstractmethod
     def forward(self, x: np.ndarray) -> np.ndarray:
@@ -117,27 +123,11 @@ class Softmax(Layer):
 
     def forward(self, x: np.ndarray) -> np.ndarray:
         self._last_z = x
-        x = np.exp(x - np.max(x))
+        x = np.exp(x)
         denominator = sum([np.exp(y) for y in x])
         return np.array([np.exp(element) / denominator for element in x])
 
     def backward(self, output_derivative) -> np.ndarray:
-        """
-        n = self._last_z.shape[0]
-        jacobian = np.zeros((n, n))
-        for i in range(n):
-            for j in range(n):
-                if i == j:
-                    x = float(self._last_z[i])
-                    jacobian[i, j] = x - pow(x, 2)
-                else:
-                    x = float(self._last_z[i])
-                    y = float(self._last_z[j])
-                    jacobian[i, j] = -x*y
-
-        gradients = np.multiply(output_derivative, jacobian)
-        """
-        #gradients = np.multiply(output_derivative, np.array([x-pow(x,2) for x in self._last_z]))
         return output_derivative
 
 

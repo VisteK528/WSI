@@ -8,6 +8,30 @@ def one_hot_encode(y: np.ndarray) -> np.ndarray:
     return one_hot
 
 
+def cross_entropy_loss(expected_dist: np.ndarray,
+                       predicted_dist: np.ndarray) -> np.ndarray:
+    array = np.array([-float(y) * np.log(float(x)) for x, y in
+                      zip(predicted_dist, expected_dist)])
+    return array
+
+
+def cross_entropy_loss_derivative(expected_dist: np.ndarray,
+                                  predicted_dist: np.ndarray) -> np.ndarray:
+    array = np.array([x - y for x, y in zip(predicted_dist, expected_dist)])
+    return array
+
+
+def squared_error(expected_dist: np.ndarray,
+                  predicted_dist: np.ndarray) -> np.ndarray:
+    return np.array([pow(expected - predicted, 2) for expected, predicted in
+                     zip(expected_dist, predicted_dist)])
+
+
+def squared_error_derivative(expected_dist: np.ndarray,
+                             predicted_dist: np.ndarray) -> np.ndarray:
+    return 2 * (predicted_dist - expected_dist)
+
+
 def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
     """
     Call in a loop to create terminal progress bar

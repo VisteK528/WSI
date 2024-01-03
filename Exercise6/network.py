@@ -5,8 +5,6 @@ from sklearn.utils import shuffle
 from utils import printProgressBar
 import time
 
-def min_max_norm(val, min_val, max_val, new_min, new_max):
-  return (val - min_val) * (new_max - new_min) / (max_val - min_val) + new_min
 
 class Loss:
     def __init__(self, loss_function: callable, loss_function_derivative: callable) -> None:
@@ -66,16 +64,41 @@ class Network:
             reshaped_parameters.append(parameter_matrix.reshape((layer.output_size, (layer.input_size+1))))
         return reshaped_parameters
 
+    def save_parameters(self, filename: str) -> None:
+        with open(filename, 'wb') as f:
+            for layer in self.layers:
+                np.save(f, layer.get_weights())
+                np.save(f, layer.get_biases())
+            f.close()
+
+    def load_parameters(self, filename: str) -> None:
+        with open(filename, 'rb') as f:
+            for layer in self.layers:
+                layer.set_weights(np.load(f, allow_pickle=True))
+                layer.set_biases(np.load(f, allow_pickle=True))
+            f.close()
+
+    def evaluate(self, x_test: np.ndarray, y_test: np.ndarray) -> float:
+        samples = len(y_test)
+        results = [np.argmax(self(attributes)) for attributes in x_test]
+
+        accuracy = sum([1 for prediction, expected_dist in zip(results, y_test) if
+                        prediction == np.argmax(expected_dist)]) / samples
+        return accuracy
+
     def fit(self,
             x_train: np.ndarray,
             y_train: np.ndarray,
             epochs: int,
             batch_size: int,
             learning_rate: float,
-            verbose: int = 0) -> None:
+            verbose: int = 0) -> dict:
+
         """Fit the network to the training data"""
 
         batches = len(x_train) // batch_size
+        all_loss_history = {}
+        all_steps = 0
 
         for epoch in range(epochs):
             # Shuffle the data
@@ -116,15 +139,20 @@ class Network:
                         loss_derivative = layer.backward(loss_derivative)
 
                 loss_value = step_loss_value / len(x_batch)
+                batch_accuracy = self.evaluate(x_batch, y_batch)
+
+                all_loss_history[all_steps] = loss_value
+                all_steps += 1
 
                 for layer in self.layers:
                     if not layer.activation_layer:
                         layer.update_weights_and_biases(learning_rate, len(x_batch))
 
-
                 if verbose == 1:
                     printProgressBar(index + 1, batches,
                                      prefix=f"{index+1}/{batches}",
-                                     suffix=f"Loss: {loss_value:.4f}",
+                                     suffix=f"Loss: {loss_value:.4f}\tAccuracy: {batch_accuracy*100:.2f}%",
                                      fill="=")
                     time.sleep(0.02)
+
+        return all_loss_history
