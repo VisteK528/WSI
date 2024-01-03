@@ -16,21 +16,15 @@ class Layer(ABC):
 
     def __init__(self) -> None:
         self._learning_rate = 0.01
-        self._parameters = None
+        self._weights = None
         self._biases = None
-        self._parameters_gradients = None
+        self.activation_layer = True
 
     def get_weights_and_biases(self) -> np.ndarray:
-        return self._parameters
+        return self._weights
 
     def set_weights_and_biases(self, parameters: np.ndarray) -> None:
         pass
-
-    def get_gradient(self) -> np.ndarray:
-        pass
-
-    def set_gradient(self, parameters_gradients: np.ndarray) -> None:
-        return self._parameters_gradients
 
     @abstractmethod
     def forward(self, x: np.ndarray) -> np.ndarray:
@@ -54,32 +48,36 @@ class Layer(ABC):
 
 
 class FullyConnected(Layer):
-    def __init__(self, input_size:int, output_size:int) -> None:
+    def __init__(self, input_size: int, output_size: int) -> None:
         super().__init__()
         self.input_size = input_size
         self.output_size = output_size
 
-        self._parameters = np.random.uniform(-1/np.sqrt(self.input_size), 1/np.sqrt(self.input_size), (self.output_size, self.input_size))
+        self._weights = np.random.uniform(-1/np.sqrt(self.input_size), 1/np.sqrt(self.input_size), (self.output_size, self.input_size))
         self._biases = np.random.uniform(-1/np.sqrt(self.input_size), 1//np.sqrt(self.input_size), (self.output_size,))
 
-        self._parameters_gradients = np.zeros((self.output_size, self.input_size+1))
+        self._weights_gradients = np.zeros((self.output_size, self.input_size))
+        self._biases_gradients = np.zeros((self.output_size, ))
         self._last_a = None
+        self.activation_layer = False
+
+    def update_weights_and_biases(self, learning_rate: float, batch_size: int) -> None:
+        self._weights -= (learning_rate/batch_size) * self._weights_gradients
+        self._biases -= (learning_rate/batch_size) * self._biases_gradients
 
     def reset_gradients(self) -> None:
-        self._parameters_gradients = np.zeros((self.output_size, self.input_size + 1))
+        self._weights_gradients = np.zeros((self.output_size, self.input_size))
+        self._biases_gradients = np.zeros((self.output_size, ))
 
     def get_weights_and_biases(self) -> np.ndarray:
-        return np.concatenate((self._parameters, self._biases.reshape(-1, 1)), axis=1)
+        return np.concatenate((self._weights, self._biases.reshape(-1, 1)), axis=1)
 
     def set_weights_and_biases(self, parameters: np.ndarray) -> None:
-        self._parameters = parameters[:, :-1]
+        self._weights = parameters[:, :-1]
         self._biases = parameters[:, -1]
 
-    def get_gradient(self) -> np.ndarray:
-        return self._parameters_gradients
-
     def forward(self, x: np.ndarray) -> np.ndarray:
-        y = np.dot(self._parameters, x)
+        y = np.dot(self._weights, x)
         y += + self._biases
 
         self._last_a = x
@@ -87,13 +85,13 @@ class FullyConnected(Layer):
 
     def backward(self, output_derivative) -> np.ndarray:
         # Calculate derivative with respect to previous layer activation
-        layer_gradient = np.dot(np.transpose(self._parameters), output_derivative)
+        layer_gradient = np.dot(np.transpose(self._weights), output_derivative)
 
         # Calculate derivative with respect to current layer weights
-        self._parameters_gradients[:, :-1] = np.dot(output_derivative[:, np.newaxis], np.transpose(self._last_a[:, np.newaxis]))
+        self._weights_gradients += np.dot(output_derivative[:, np.newaxis], np.transpose(self._last_a[:, np.newaxis]))
 
         # Calculate derivative with respect to current layer biases
-        self._parameters_gradients[:, -1] = output_derivative.reshape(output_derivative.shape[0],)
+        self._biases_gradients += output_derivative.reshape(output_derivative.shape[0],)
 
         return layer_gradient
 
@@ -124,8 +122,23 @@ class Softmax(Layer):
         return np.array([np.exp(element) / denominator for element in x])
 
     def backward(self, output_derivative) -> np.ndarray:
-        gradients = np.multiply(output_derivative, np.array([x-pow(x,2) for x in self._last_z]))
-        return gradients
+        """
+        n = self._last_z.shape[0]
+        jacobian = np.zeros((n, n))
+        for i in range(n):
+            for j in range(n):
+                if i == j:
+                    x = float(self._last_z[i])
+                    jacobian[i, j] = x - pow(x, 2)
+                else:
+                    x = float(self._last_z[i])
+                    y = float(self._last_z[j])
+                    jacobian[i, j] = -x*y
+
+        gradients = np.multiply(output_derivative, jacobian)
+        """
+        #gradients = np.multiply(output_derivative, np.array([x-pow(x,2) for x in self._last_z]))
+        return output_derivative
 
 
 class ReLU(Layer):
