@@ -13,8 +13,9 @@ if __name__ == "__main__":
 
     y_train = one_hot_encode(y_train)
 
-    layers = [FullyConnected(input_size=784, output_size=16), Tanh(),
-              FullyConnected(input_size=16, output_size=16), Tanh(),
+    layers = [FullyConnected(input_size=784, output_size=32), Tanh(),
+              FullyConnected(input_size=32, output_size=32), Tanh(),
+              FullyConnected(input_size=32, output_size=16), Tanh(),
               FullyConnected(input_size=16, output_size=10), Tanh()]
 
     layers2 = [FullyConnected(input_size=784, output_size=16), Tanh(),
@@ -37,10 +38,12 @@ if __name__ == "__main__":
     net = Network(layers3, learning_rate=0.1)
     net.compile(loss2)
 
-    history = net.fit(x_train, y_train, 5, verbose=1, batch_size=128, learning_rate=0.3)
+    history = net.fit(x_train, y_train, 5, verbose=1, batch_size=64, learning_rate=0.1)
+    #net.load_parameters('data/mnist_model_92.h5')
     accuracy = net.evaluate(x_test, one_hot_encode(y_test))
+    net.save_parameters('data/mnist_model_cross_layer3.h5')
 
-    print(f"Accuracy: {accuracy:.2f}%")
+    print(f"Accuracy: {accuracy*100:.2f}%")
     plt.plot(history.keys(), history.values())
     plt.show()
 
