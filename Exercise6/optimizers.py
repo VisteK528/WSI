@@ -18,7 +18,7 @@ class Optimizer(ABC):
         self._net_arch = net_architecture
 
     @abstractmethod
-    def optimize(self, layer: Layer):
+    def optimize(self, layer: Layer, epoch: int):
         pass
 
     @abstractmethod
@@ -27,19 +27,21 @@ class Optimizer(ABC):
 
 
 class SimpleSGD(Optimizer):
-    def __init__(self, learning_rate: float):
+    def __init__(self, learning_rate: float, decay: float):
         super().__init__()
         assert 0 < learning_rate < 1
+        self._start_lr = learning_rate
         self._lr = learning_rate
+        self._decay = decay
 
     @property
     def learning_rate(self) -> float:
-        return self._lr
+        return self._start_lr
 
     def compile(self):
         pass
 
-    def optimize(self, layers: List[Layer]):
+    def optimize(self, layers: List[Layer], epoch: int):
         for layer in layers:
             if not layer.activation_layer:
                 weights = layer.get_weights()
@@ -57,13 +59,16 @@ class SimpleSGD(Optimizer):
 
 
 class MomentumSGD(Optimizer):
-    def __init__(self, alpha: float, beta: float):
+    def __init__(self, alpha: float, beta: float, decay: float):
         super().__init__()
         assert 0 < alpha < 1
         assert 0 < beta < 1
+        self._start_alpha = alpha
         self._alpha = alpha
         self._beta = beta
         self._v = None
+
+        self._decay = decay
 
     @property
     def alpha(self) -> float:
@@ -89,9 +94,12 @@ class MomentumSGD(Optimizer):
 
         return new_velocities
 
-    def optimize(self, layers: List[Layer]):
+    def optimize(self, layers: List[Layer], epoch: int):
         assert type(self._net_arch) == int
         assert len(self._v) == self._net_arch
+
+        # Decrease alpha / lr parameter
+        self._alpha = self._start_alpha * np.exp(-self._decay*epoch)
 
         layers = [layer for layer in layers if not layer.activation_layer]
 

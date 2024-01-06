@@ -148,7 +148,7 @@ class Network:
                 all_loss_history[all_steps] = loss_value
                 all_steps += 1
 
-                self._optimizer.optimize(self.layers)
+                self._optimizer.optimize(self.layers, epoch)
 
                 if verbose == 1:
                     printProgressBar(index + 1, batches,

@@ -31,7 +31,7 @@ if __name__ == "__main__":
     loss = Loss(squared_error, squared_error_derivative)
     loss2 = Loss(cross_entropy_loss, cross_entropy_loss_derivative)
     #optimizer = SimpleSGD(learning_rate=0.1)
-    optimizer_with_momentum = MomentumSGD(alpha=0.1, beta=0.9)
+    optimizer_with_momentum = MomentumSGD(alpha=0.5, beta=0.9, decay=0.1)
 
     x_train = x_train.reshape((60000, 28 * 28))
     x_train = x_train.astype('float32') / 255
@@ -44,7 +44,7 @@ if __name__ == "__main__":
     history = net.fit(x_train, y_train, 5, verbose=1, batch_size=128)
     #net.load_parameters('data/mnist_model_92.h5')
     accuracy = net.evaluate(x_test, one_hot_encode(y_test))
-    net.save_parameters('data/mnist_model_cross_optimizer.h5')
+    net.save_parameters('data/mnist_model_cross_optimizer_with_decay_2.h5')
 
     print(f"Accuracy: {accuracy*100:.2f}%")
     plt.plot(history.keys(), history.values())
