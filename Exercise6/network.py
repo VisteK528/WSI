@@ -3,6 +3,7 @@ import numpy as np
 from layers import Layer
 from sklearn.utils import shuffle
 from utils import printProgressBar
+from optimizers import Optimizer
 import time
 
 
@@ -24,11 +25,11 @@ class Loss:
 
 
 class Network:
-    def __init__(self, layers: List[Layer], learning_rate: float) -> None:
+    def __init__(self, layers: List[Layer]) -> None:
         self.layers = layers
-        self.learning_rate = learning_rate
         self.loss_function = None
         self._network_parameters = None
+        self._optimizer = None
 
     def __call__(self, x: np.ndarray) -> np.ndarray:
         """Forward propagation of x through all layers"""
@@ -37,8 +38,12 @@ class Network:
 
         return x
 
-    def compile(self, loss: Loss) -> None:
+    def compile(self, loss: Loss, optimizer: Optimizer) -> None:
         self.loss_function = loss
+        self._optimizer = optimizer
+
+        self._optimizer.net_arch = len([layer for layer in self.layers if not layer.activation_layer])
+        self._optimizer.compile()
 
     def get_parameters(self) -> np.ndarray:
         parameters_lists = []
@@ -91,7 +96,6 @@ class Network:
             y_train: np.ndarray,
             epochs: int,
             batch_size: int,
-            learning_rate: float,
             verbose: int = 0) -> dict:
 
         """Fit the network to the training data"""
@@ -144,9 +148,7 @@ class Network:
                 all_loss_history[all_steps] = loss_value
                 all_steps += 1
 
-                for layer in self.layers:
-                    if not layer.activation_layer:
-                        layer.update_weights_and_biases(learning_rate, len(x_batch))
+                self._optimizer.optimize(self.layers)
 
                 if verbose == 1:
                     printProgressBar(index + 1, batches,

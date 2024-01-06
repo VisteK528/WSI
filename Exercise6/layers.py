@@ -18,6 +18,9 @@ class Layer(ABC):
         self._learning_rate = 0.01
         self._weights = None
         self._biases = None
+        self._weights_gradients = None
+        self._biases_gradients = None
+        self._accumulated_gradients = 0
         self.activation_layer = True
 
     def get_weights(self) -> np.ndarray:
@@ -31,6 +34,16 @@ class Layer(ABC):
 
     def set_biases(self, biases: np.ndarray) -> None:
         self._biases = biases
+
+    def get_weights_gradient(self) -> np.ndarray:
+        return self._weights_gradients
+
+    def get_biases_gradient(self) -> np.ndarray:
+        return self._biases_gradients
+
+    @property
+    def accumulated_gradients(self) -> int:
+        return self._accumulated_gradients
 
     @abstractmethod
     def forward(self, x: np.ndarray) -> np.ndarray:
@@ -64,6 +77,7 @@ class FullyConnected(Layer):
 
         self._weights_gradients = np.zeros((self.output_size, self.input_size))
         self._biases_gradients = np.zeros((self.output_size, ))
+
         self._last_a = None
         self.activation_layer = False
 
@@ -74,6 +88,7 @@ class FullyConnected(Layer):
     def reset_gradients(self) -> None:
         self._weights_gradients = np.zeros((self.output_size, self.input_size))
         self._biases_gradients = np.zeros((self.output_size, ))
+        self._accumulated_gradients = 0
 
     def get_weights_and_biases(self) -> np.ndarray:
         return np.concatenate((self._weights, self._biases.reshape(-1, 1)), axis=1)
@@ -98,6 +113,8 @@ class FullyConnected(Layer):
 
         # Calculate derivative with respect to current layer biases
         self._biases_gradients += output_derivative.reshape(output_derivative.shape[0],)
+
+        self._accumulated_gradients += 1
 
         return layer_gradient
 

@@ -5,6 +5,7 @@ from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 from utils import (one_hot_encode, cross_entropy_loss, cross_entropy_loss_derivative,
                    squared_error, squared_error_derivative)
+from optimizers import SimpleSGD, MomentumSGD
 
 
 if __name__ == "__main__":
@@ -26,12 +27,13 @@ if __name__ == "__main__":
 
     loss = Loss(cross_entropy_loss, cross_entropy_loss_derivative)
     #loss = Loss(squared_error, squared_error_derivative)
+    optimizer_with_momentum = MomentumSGD(alpha=1e-2, beta=0.9)
 
-    net = Network(layers, learning_rate=0.1)
-    net.compile(loss)
+    net = Network(layers)
+    net.compile(loss, optimizer_with_momentum)
 
-    net.load_parameters("data/iris.npy")
-    #net.fit(x_train, y_train, 10, verbose=1, batch_size=18, learning_rate=0.3)
+    #net.load_parameters("data/iris.npy")
+    net.fit(x_train, y_train, 100, verbose=1, batch_size=18)
     #net.save_parameters("data/iris.npy")
 
     accuracy = net.evaluate(x_test, one_hot_encode(y_test))
