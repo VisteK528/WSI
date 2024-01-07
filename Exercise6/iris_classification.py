@@ -26,14 +26,12 @@ if __name__ == "__main__":
               Softmax()]
 
     loss = Loss(cross_entropy_loss, cross_entropy_loss_derivative)
-    #loss = Loss(squared_error, squared_error_derivative)
-    optimizer_with_momentum = MomentumSGD(alpha=1e-2, beta=0.9)
+    optimizer_with_momentum = MomentumSGD(alpha=1e-1, beta=0.9, decay=0.1)
 
     net = Network(layers)
     net.compile(loss, optimizer_with_momentum)
 
-    #net.load_parameters("data/iris.npy")
-    net.fit(x_train, y_train, 100, verbose=1, batch_size=18)
+    net.fit(x_train, y_train, 50, verbose=1, batch_size=18)
     #net.save_parameters("data/iris.npy")
 
     accuracy = net.evaluate(x_test, one_hot_encode(y_test))

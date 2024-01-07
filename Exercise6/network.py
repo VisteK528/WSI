@@ -102,6 +102,7 @@ class Network:
 
         batches = len(x_train) // batch_size
         all_loss_history = {}
+        all_accuracy_history = {}
         all_steps = 0
 
         for epoch in range(epochs):
@@ -146,6 +147,7 @@ class Network:
                 batch_accuracy = self.evaluate(x_batch, y_batch)
 
                 all_loss_history[all_steps] = loss_value
+                all_accuracy_history[all_steps] = batch_accuracy
                 all_steps += 1
 
                 self._optimizer.optimize(self.layers, epoch)
@@ -157,4 +159,7 @@ class Network:
                                      fill="=")
                     time.sleep(0.02)
 
-        return all_loss_history
+        all_history = {}
+        all_history["loss"] = all_loss_history
+        all_history["accuracy"] = all_accuracy_history
+        return all_history

@@ -30,7 +30,6 @@ if __name__ == "__main__":
 
     loss = Loss(squared_error, squared_error_derivative)
     loss2 = Loss(cross_entropy_loss, cross_entropy_loss_derivative)
-    #optimizer = SimpleSGD(learning_rate=0.1)
     optimizer_with_momentum = MomentumSGD(alpha=0.5, beta=0.9, decay=0.1)
 
     x_train = x_train.reshape((60000, 28 * 28))
